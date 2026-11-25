@@ -23,5 +23,5 @@ O guia de colaboração dos integrantes fica em `docs/README.md`.
 - Executar `python scripts/build.py --check`; quando houver HTML único regenerado, acrescentar `--single-file`.
 - Mudanças em SQL, dados ou gráficos exigem consultas em navegador real via `http://localhost`, comparadas com cálculos independentes do CSV.
 - Mudanças em interações/layout exigem navegação, typewriter, editor SQL (foco e teclado), gráficos, títulos e 16:9 em 1280×720 e 1920×1080; conferir celular quando afetado.
-- Não existe `tests/`, `package.json` ou suíte `npm test` nesta entrega. A auditoria anterior usou testes temporários fora do repositório; não assuma que eles estarão disponíveis em outro computador.
+- O teste de fumaça Playwright fica em `tests/smoke.cjs`. Consulte o README para executar. Use `node scripts/export-roteiro.cjs --check` para conferir roteiro e prompts.
 - Sempre indicar o que foi testado de fato e o que está pendente.

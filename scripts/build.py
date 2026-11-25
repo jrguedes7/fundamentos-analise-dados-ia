@@ -38,13 +38,13 @@ def versioned_index(data):
     html = (ROOT / 'index.html').read_text(encoding='utf-8')
     def version(match):
         filename = match.group(2)
-        content = data.encode('utf-8') if filename == 'js/data.js' else (ROOT / filename).read_bytes()
+        content = data.encode('utf-8') if filename == 'js/data.js' else (ROOT / filename).read_text(encoding='utf-8').encode('utf-8')
         digest = hashlib.sha256(content).hexdigest()[:12]
         return f'{match.group(1)}{filename}?v={digest}"'
     return re.sub(r'((?:src|href)=")((?:js/[^"?]+\.js|css/theme\.css))(?:\?v=[^" ]*)?"', version, html)
 
 
-def single_file(data, html):
+def single_file(data, html, vendor):
     scripts = []
     def inline_script(match):
         filename = match.group(1)
@@ -54,7 +54,6 @@ def single_file(data, html):
     html = re.sub(r'<script defer src="(js/[^"?]+)(?:\?v=[^"]*)?"></script>', inline_script, html)
     css = (ROOT / 'css/theme.css').read_text(encoding='utf-8')
     html = re.sub(r'<link rel="stylesheet" href="css/theme.css(?:\?v=[^"]*)?">', lambda _: '<style>\n' + css + '\n</style>', html)
-    vendor = (ROOT / 'vendor/sql.js/sql-wasm-inline.js').read_text(encoding='utf-8')
     # Scripts inline não respeitam defer: executar só depois do HTML da apresentação.
     bundled = '<script type="text/plain" id="sql-vendor-source">\n' + vendor.replace('</script', '<\\/script') + '\n</script>\n' + '\n'.join(scripts)
     html = html.replace('</body>', bundled + '\n</body>')
@@ -68,13 +67,22 @@ def main():
     args = parser.parse_args()
     data = derived_data()
     index = versioned_index(data)
-    outputs = {'js/data.js': data, 'index.html': index}
+    vendor = (ROOT / 'vendor/sql.js/sql-wasm-inline.js').read_text(encoding='utf-8')
+    local_source = (
+        '/* Gerado por scripts/build.py a partir de sql-wasm-inline.js. */\n'
+        'document.currentScript.courseSqlSource = ' + json.dumps(vendor) + ';\n'
+    )
+    outputs = {
+        'js/data.js': data,
+        'index.html': index,
+        'vendor/sql.js/sql-wasm-source.js': local_source,
+    }
     if args.single_file:
-        outputs['apresentacao_arquivo_unico.html'] = single_file(data, index)
+        outputs['apresentacao_arquivo_unico.html'] = single_file(data, index, vendor)
     for filename, content in outputs.items():
         path = ROOT / filename
         if args.check:
-            if path.read_text(encoding='utf-8') != content:
+            if not path.is_file() or path.read_text(encoding='utf-8') != content:
                 raise SystemExit(f'Desatualizado: {filename}. Execute python scripts/build.py.')
             print('OK', filename)
         else:

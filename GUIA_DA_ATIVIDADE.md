@@ -116,3 +116,16 @@ Na leitura crítica, compare dois gráficos de maio e junho com os mesmos valore
 - Conclusão breve com evidência, uma limitação e uma próxima pergunta.
 
 Ao apresentar à gerência, explique por que escolheu esse indicador, por que confia no resultado e o que recomenda investigar em seguida. Dizer o que ainda não sabemos também faz parte de uma boa análise.
+
+## Exercício em dupla — confira uma queda de receita
+
+1. Abra **Praticar no editor SQL** no slide de comparação de escalas. Escreva uma consulta que traga a receita após descontos de maio e junho de 2026. Use o CSV para conferir.
+2. Subtraia a receita de maio da de junho. Depois divida a diferença pela receita de maio e converta o resultado em percentual.
+3. Compare os dois gráficos do slide. Explique o efeito do eixo que começa em R$ 6.800.
+4. Escreva uma conclusão com o valor em reais e o percentual. Indique quais dados ajudariam a investigar se houve queda no número de clientes.
+
+### Alternativa se a ferramenta de IA estiver indisponível
+
+**Resposta simulada para revisar** — “A receita caiu 8,63% de maio para junho. Portanto, a loja perdeu 8,63% dos clientes.”
+
+Confira o percentual usando o CSV ou o resultado do SQL. Reescreva a conclusão para dizer apenas o que a receita mostra e explique como você testaria a afirmação sobre clientes.

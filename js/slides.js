@@ -216,7 +216,7 @@
     </section>
     <section class="retro-card lab-panel">
       <h3 class="lab-panel-title">Amostra dos registros <small id="table-count">—</small></h3>
-      <div class="table-scroll"><table id="explore-table" class="spreadsheet-table modern-table"><thead><tr><th>Mês</th><th>Categoria</th><th>Produto</th><th>Receita (R$)</th></tr></thead><tbody></tbody></table></div>
+      <div class="table-scroll"><table aria-label="Amostra dos registros de venda" id="explore-table" class="spreadsheet-table modern-table"><thead><tr><th>Mês</th><th>Categoria</th><th>Produto</th><th>Receita (R$)</th></tr></thead><tbody></tbody></table></div>
     </section>
   </div>
   <p class="footnote">*Lucro bruto simplificado = receita após desconto − custo dos produtos; não contempla demais despesas.</p>
@@ -233,23 +233,24 @@
     <button type="button" class="sql-example" data-query="categoria">Receita por categoria</button>
     <button type="button" class="sql-example" data-query="canal">Pedidos por canal</button>
   </div>
-  <label class="sql-label" for="sql-editor">CONSULTA SQL — TABELA: <code>vendas</code></label>
-  <textarea id="sql-editor" class="sql-editor" spellcheck="false" aria-label="Editor de consulta SQL"></textarea>
+  <label class="sql-label" for="sql-editor">CONSULTA SQL</label>
+  <textarea id="sql-editor" class="sql-editor" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Editor de consulta SQL"></textarea>
   <div class="sql-actions">
     <button id="run-sql" class="retro-btn execute-btn" type="button">▶ EXECUTAR SELECT</button>
     <button id="retry-sql" class="retro-btn" type="button" hidden>TENTAR NOVAMENTE</button><span id="sql-status" role="status" aria-live="polite">Preparando mecanismo SQL…</span>
   </div>
+  ${sqlSchema('sql-editor')}
   <div class="chart-controls"><label>Categoria <select id="sql-category" aria-label="Coluna de categoria" disabled></select></label><label>Indicador <select id="sql-value" aria-label="Coluna numérica do gráfico" disabled></select></label><label>Exibição <select id="sql-unit" aria-label="Unidade do gráfico" disabled><option value="currency">Reais (R$)</option><option value="count">Contagem</option><option value="number">Número</option><option value="share">Participação no total (%)</option><option value="percent">Taxa em fração (%)</option></select></label></div><div class="lab-panels sql-output">
     <section class="retro-card lab-panel">
       <h3 class="lab-panel-title">Resultado da consulta <small id="sql-count">—</small></h3>
-      <div class="table-scroll"><table id="sql-results" class="spreadsheet-table modern-table"><thead></thead><tbody></tbody></table></div>
+      <div class="table-scroll" id="sql-results-scroll" role="region" aria-label="Resultados da consulta"><table aria-label="Resultados da consulta SQL" id="sql-results" class="spreadsheet-table modern-table"><thead></thead><tbody></tbody></table></div>
     </section>
     <section class="retro-card lab-panel">
       <h3 class="lab-panel-title">Visualização <small id="sql-chart-label">—</small></h3>
       <div id="sql-chart" class="chart-host" role="img" aria-label="Gráfico gerado a partir do SELECT"></div>
     </section>
   </div>
-  <p id="sql-display-note" class="footnote"></p><details class="sql-schema"><summary>Campos disponíveis · vendas · Ctrl+Enter executa</summary><p>id_pedido, data, mes, canal, regiao, categoria, produto, quantidade, preco_unitario, receita, faturamento_bruto, custo_produtos, lucro_bruto</p><p>receita = receita após descontos; lucro_bruto = lucro bruto simplificado. Fonte: CSV fictício do curso.</p></details>
+  <p id="sql-display-note" class="footnote"></p>
 </div>`,
   ];
   let lessonNotes = [];
@@ -584,7 +585,7 @@
     add(
       slide(
         'Contar registros ou somar unidades?',
-        'Antes de calcular, precisamos saber o que o indicador significa.',
+        'Cada linha é um registro de venda. O pedido PED-202605-0057, por exemplo, tem três unidades de Hub USB.',
         code(
           'SELECT COUNT(*) AS registros,\n       SUM(quantidade) AS unidades,\n       ROUND(SUM(receita), 2) AS receita_total\nFROM vendas;',
         ) +
@@ -598,7 +599,8 @@
               'Soma as unidades vendidas. Uma linha pode conter mais de uma unidade.',
             ),
           ) +
-          `<p class="lesson-aside">AS dá um nome à coluna de resultado. ROUND(..., 2) arredonda a apresentação para duas casas.</p>`,
+          `<p class="lesson-aside">AS dá um nome à coluna de resultado. ROUND(..., 2) arredonda a apresentação para duas casas.</p>` +
+          sqlExercise('contagem', 'Retorne uma linha com duas colunas: número de registros e total de unidades, nessa ordem.', 'Use COUNT(*) e SUM(quantidade) na tabela vendas.'),
       ),
       'Agora vamos produzir indicadores, em vez de listar vendas. COUNT(*) conta as linhas; SUM soma valores de uma coluna. Por que 475 registros não viram 475 unidades? Porque uma venda pode ter duas, três ou mais unidades. A base soma 909. A soma de receita dá R$ 52.841,96. AS é apenas o nome que vamos dar ao resultado, não altera a conta. ROUND com 2 deixa o resultado em duas casas decimais. Pergunte: se eu colocar um WHERE antes do ponto e vírgula, estaremos calculando o total de toda a loja ou do recorte?',
     );
@@ -656,7 +658,7 @@
 
     add(
       original[7],
-      'Vamos testar uma pergunta de cada vez. Comece em Ver registros, passe pelo filtro, conte e some, e só depois agrupe por mês. Antes de clicar em Executar, peça que alguém traduza a consulta em português. O editor aceita Ctrl+Enter. Escolha a coluna de categoria, o indicador e a unidade do gráfico. Uma consulta só numérica, como COUNT(*), pode ser lida na tabela sem precisar de um gráfico. Se houver erro, leia a mensagem, confira os campos e tente novamente. Se a preparação do mecanismo falhar, use Tentar novamente. Todos os cálculos são do SQLite local, não de IA.',
+      'Vamos testar uma pergunta de cada vez. Comece em Ver registros, passe pelo filtro, conte e some, e só depois agrupe por mês. Antes de clicar em Executar, peça que alguém traduza a consulta em português. Ao digitar parte de um comando ou nome de coluna, o editor mostra sugestões. Clique numa opção ou selecione-a com as setas e pressione Enter. Abra Tabelas e colunas para consultar o esquema completo. Ctrl+Enter executa a consulta. Escolha a coluna de categoria, o indicador e a unidade do gráfico. Uma consulta só numérica, como COUNT(*), pode ser lida na tabela sem precisar de um gráfico. Se houver erro, leia a mensagem, confira os campos e tente novamente. Se a preparação do mecanismo falhar, use Tentar novamente. Todos os cálculos são do SQLite local.',
     );
 
     add(
@@ -736,6 +738,34 @@
     deckSlides = slides;
     lessonNotes = notes;
   })();
+
+  function sqlSchema(editorId) {
+    return `<details class="sql-schema" data-sql-schema="${editorId}"><summary>Tabelas e colunas</summary></details>`;
+  }
+
+  function sqlExercise(key, question, hint) {
+    return `<details class="retro-card sql-exercise">
+      <summary>Praticar no editor SQL</summary>
+      <form data-sql-exercise="${key}">
+        <p id="exercise-${key}-question">${question}</p>
+        <div class="exercise-workspace">
+          <div class="exercise-input">
+            <label for="exercise-${key}">Consulta SQL</label>
+            <textarea id="exercise-${key}" class="sql-editor" required spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="exercise-${key}-question" placeholder="SELECT …"></textarea>
+            <button class="retro-btn" type="submit">Executar SQL</button>
+            ${sqlSchema(`exercise-${key}`)}
+            <details><summary>Ver dica</summary><p>${hint}</p></details>
+          </div>
+          <div class="exercise-output">
+            <p role="status" class="exercise-status">Execute uma consulta para ver o resultado.</p>
+            <div class="table-scroll exercise-results" role="region" aria-label="Resultado do exercício" hidden>
+              <table class="spreadsheet-table modern-table" aria-label="Resultado do exercício SQL"><thead></thead><tbody></tbody></table>
+            </div>
+          </div>
+        </div>
+      </form>
+    </details>`;
+  }
 
   /* Caso e verificações de aprendizagem. */
   {
@@ -933,9 +963,9 @@
           slide(
             'Mesmos dados. Duas impressões visuais.',
             'Compare receitas de maio e junho de 2026. Observe onde começa o eixo vertical de cada gráfico.',
-            `<div class="scale-demo" data-scale-demo>${comparisonChart(0, 'Gráfico A · eixo a partir de zero')}${comparisonChart(6800, 'Gráfico B · eixo começa em 6.800')}</div><p class="footnote">Fonte: soma de receita do CSV fictício da Loja Horizonte. Os valores são iguais nos dois gráficos; somente a escala vertical mudou.</p>${prompt('Podemos confiar apenas no tamanho das barras? Que afirmação os números realmente sustentam?')}`,
+            `<div class="scale-demo" data-scale-demo>${comparisonChart(0, 'Gráfico A · eixo a partir de zero')}${comparisonChart(6800, 'Gráfico B · eixo começa em 6.800')}</div><p class="footnote">Fonte: soma de receita do CSV fictício da Loja Horizonte. Os valores são iguais nos dois gráficos; somente a escala vertical mudou.</p>${prompt('Em dupla: confira os totais no CSV ou no SQL, calcule a variação e explique o efeito da escala. Que dados ajudariam a investigar a causa?')}` + sqlExercise('meses', 'Retorne duas colunas, mês e receita após descontos, para maio e junho de 2026.', 'Filtre mes com IN e use SUM(receita) com GROUP BY mes.'),
           ),
-          `Peça que a turma compare as duas representações antes de interpretar. Ambas mostram maio ${money(may)} e junho ${money(june)}, calculados da mesma coluna de receita do CSV. O gráfico B começa em R$6.800 e amplia a diferença visual. Não esconda essa origem: o exercício é ler o eixo e perceber que a mesma informação pode produzir impressões diferentes. Pergunte qual versão ajuda a comparar magnitudes e o que não podemos inferir sobre clientes ou causas. Passe à pergunta seguinte após a discussão.`,
+          `Peça que a turma compare as duas representações antes de interpretar. Ambas mostram maio ${money(may)} e junho ${money(june)}, calculados da mesma coluna de receita do CSV. O gráfico B começa em R$6.800 e amplia a diferença visual. Não esconda essa origem: o exercício é ler o eixo e perceber que a mesma informação pode produzir impressões diferentes. Pergunte qual versão ajuda a comparar magnitudes e o que não podemos inferir sobre clientes ou causas. Reserve cinco minutos deste bloco para as duplas conferirem os totais no CSV ou na consulta Receita por mês. Peça a diferença em reais e a variação relativa a maio. Esperado: queda de R$ 663,59 (8,63%). Para investigar a hipótese de queda no número de clientes, peça identificadores anonimizados que permitam contar clientes distintos por mês. Retome a discussão no quiz seguinte.`,
         );
         add(
           checkpoint('chart'),

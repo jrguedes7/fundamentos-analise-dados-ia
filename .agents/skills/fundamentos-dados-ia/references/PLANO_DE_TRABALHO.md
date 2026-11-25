@@ -25,6 +25,7 @@ Depois de alterar slides, falas ou prompts em `js/slides.js`/`js/activities.js`,
 
 ```powershell
 node scripts/export-roteiro.cjs
+node scripts/export-roteiro.cjs --check
 ```
 
 Para exportar e conferir o HTML único opcional:
@@ -52,7 +53,7 @@ Abrir `http://localhost:5500`. Para um módulo JS alterado, `node --check js/nom
 - **Exportação:** se for compartilhada, testar a cópia regenerada; não supor que um teste do modular valida automaticamente o HTML único.
 
 ## Evidência disponível e limites
-Não há `tests/`, `package.json`, `npm test` ou dependências de teste distribuídas. A auditoria anterior usou scripts e capturas na pasta temporária do sistema, fora do repositório. Não depender do caminho temporário de outro integrante nem anunciar uma suíte inexistente.
+O teste de fumaça está em `tests/smoke.cjs`. Siga o README para instalar o Playwright e executar.
 
 A revisão anterior exercitou Edge real, dados/SQL, gráficos, navegação, responsividade, falhas/recuperação, concorrência e HTML único por HTTP e `file://`. Isso é evidência daquela versão; depois de uma mudança, executar os checks pertinentes novamente. O ensaio no projetor e o uso das contas Google da turma exigem verificação no ambiente da aula.
 

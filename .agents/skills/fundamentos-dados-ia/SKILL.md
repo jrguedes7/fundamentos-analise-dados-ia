@@ -23,7 +23,7 @@ Leia as referências conforme a tarefa:
 - `js/sql-engine.js` executa SQLite em memória dentro de Web Worker, usando o WASM incorporado na biblioteca local de `vendor/sql.js/`. A preparação tem limite de 15 segundos e cada consulta, 8 segundos. Falhas permitem nova tentativa; editar a consulta cancela execução pendente e invalida resultados antigos.
 - O CSV da raiz alimenta `js/data.js` pelo build. O XLSX original é apoio preservado e tem diferença de centavos por precisão das fórmulas. Não há pasta `data/` no estado atual.
 - `scripts/build.py` atualiza dados e versões dos recursos, e pode gerar HTML único. `scripts/export-roteiro.cjs` exporta falas e prompts dos módulos.
-- Não há `tests/`, `package.json` ou suíte automatizada distribuída. A auditoria de navegador anterior usou arquivos temporários fora da entrega.
+- O teste de fumaça do navegador está em `tests/smoke.cjs`. A auditoria anterior mais ampla usou arquivos temporários.
 
 ## Processo obrigatório em cada alteração
 1. Inspecione o projeto existente e confirme o estado de `git status`, arquivos, dependências e dados. Não recomece a implementação do zero.
@@ -58,7 +58,7 @@ O laboratório usa a distribuição local com WASM incorporado; a falha antiga d
 
 - Preserve a separação entre interface (`js/sql-lab.js`) e engine (`js/sql-engine.js`). Não mova `db.exec()` para o thread dos controles.
 - Preserve uma consulta iniciada por `SELECT`, `PRAGMA query_only`, cancelamento, timeouts e retry. Resultado de execução antiga não pode sobrescrever consulta nova.
-- No modular, o Worker importa a biblioteca local por URL absoluta. No HTML único, lê o vendor em `script type="text/plain"`; a biblioteca não deve executar no thread principal.
+- Por HTTP, o Worker importa a biblioteca local por URL absoluta. Na abertura direta de `index.html`, `sql-wasm-source.js` entrega o código como texto. O HTML único já incorpora o texto. Nos três modos, a biblioteca executa dentro do Worker.
 - Valide `COUNT(*) = 475`, agregado mensal, erro de sintaxe, retorno vazio e recuperação. Para alterações de carregamento/execução, valide também timeout sem travar navegação e nova tentativa.
 
 ## Critérios mínimos para considerar a tarefa concluída

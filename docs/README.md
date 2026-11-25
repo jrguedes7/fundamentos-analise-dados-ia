@@ -40,7 +40,7 @@ O código atual e as fontes da raiz prevalecem sobre os planos históricos desta
 
 ## Executar e conferir
 
-Para abrir a apresentação, basta Python e um navegador atual. Node.js é necessário para exportar o roteiro e os prompts. Não há `package.json`, instalação npm ou pasta `tests/` na entrega.
+Para abrir a apresentação, basta Python e um navegador atual. Node.js é necessário para exportar o roteiro e os prompts. Para executar o teste de fumaça em `tests/smoke.cjs`, siga as instruções do README principal.
 
 ```powershell
 python -m http.server 5500 --bind 127.0.0.1

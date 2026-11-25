@@ -2,21 +2,33 @@
 (function () {
   'use strict';
   const slides = window.DECK_SLIDES || [];
-  let current = 0;
+  let current = -1;
   const host = document.getElementById('slides-host');
   host.innerHTML = slides.join('\n');
   const elements = slides.map((_, i) => document.getElementById(`slide-${i + 1}`));
   const prev = document.getElementById('btn-prev'),
     next = document.getElementById('btn-next');
+  for (const slide of elements) slide.setAttribute('aria-hidden', 'true');
+  let exploreInitialized = false;
+  let labInitialized = false;
   function showSlide(index) {
-    if (index < 0 || index >= slides.length) return;
+    if (index === current || index < 0 || index >= slides.length) return;
     window.CourseAnimation.stop();
+    const previous = elements[current];
+    previous?.classList.remove('active');
+    previous?.setAttribute('aria-hidden', 'true');
     current = index;
-    elements.forEach((el, i) => {
-      el.classList.toggle('active', i === index);
-      el.setAttribute('aria-hidden', i === index ? 'false' : 'true');
-    });
     const active = elements[index];
+    active.classList.add('active');
+    active.setAttribute('aria-hidden', 'false');
+    if (!exploreInitialized && active.querySelector('#category-filter')) {
+      exploreInitialized = true;
+      window.CourseViz.initExplore();
+    }
+    if (!labInitialized && active.querySelector('#sql-editor')) {
+      labInitialized = true;
+      window.SqlLab.init();
+    }
     active.scrollTop = 0;
     document.getElementById('slide-counter').textContent =
       `${String(index + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
@@ -58,7 +70,8 @@
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     if (
       ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName) ||
-      document.activeElement?.isContentEditable
+      document.activeElement?.isContentEditable ||
+      document.activeElement?.matches('#sql-results-scroll, .exercise-results, summary, .sql-schema button')
     )
       return;
     if (e.key === 'ArrowRight' || e.key === 'PageDown') {
@@ -84,8 +97,7 @@
       e.preventDefault();
     }
   });
-  if (window.CourseViz) window.CourseViz.initExplore();
-  if (window.SqlLab) window.SqlLab.init();
+  window.SqlLab.initExercises();
   if (window.CourseActivities) window.CourseActivities.init();
   showSlide(0);
   window.CourseDeck = { showSlide, getSlide: () => current + 1, totalSlides: slides.length };

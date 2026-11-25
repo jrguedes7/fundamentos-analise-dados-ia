@@ -2,6 +2,13 @@
 (function () {
   'use strict';
   const LIMIT = 20;
+  const QUERY_LIMIT = 5000;
+  const COMPLETION_LIMIT = 4;
+  const SQL_WORDS = [
+    'SELECT', 'DISTINCT', 'FROM', 'WHERE', 'AS', 'AND', 'OR', 'IN', 'LIKE',
+    'GROUP BY', 'ORDER BY', 'HAVING', 'ASC', 'DESC', 'LIMIT',
+    'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'ROUND',
+  ];
   const examples = {
     primeiras: 'SELECT produto, quantidade, receita\nFROM vendas\nLIMIT 5;',
     filtro: "SELECT mes, produto, receita\nFROM vendas\nWHERE categoria = 'Informática'\nLIMIT 10;",
@@ -48,6 +55,7 @@
   }
   function clearResult(message) {
     lastResult = null;
+    el('sql-results-scroll').removeAttribute('tabindex');
     el('sql-results').querySelector('thead').replaceChildren();
     el('sql-results').querySelector('tbody').replaceChildren();
     el('sql-count').textContent = '—';
@@ -125,6 +133,7 @@
     el('sql-chart-label').textContent = `${columns[valueIdx]} · ${unitLabel}`;
   }
   function renderTable(columns, values, valueIdx, unit, shares) {
+    el('sql-results-scroll').tabIndex = 0;
     const table = el('sql-results'),
       head = table.querySelector('thead'),
       body = table.querySelector('tbody'),
@@ -255,7 +264,7 @@
       throw new Error('Nesta atividade, comece com SELECT para consultar os dados.');
     if (cleaned.replace(/;\s*$/, '').includes(';'))
       throw new Error('Execute apenas uma consulta SELECT por vez.');
-    if (sql.length > 5000) throw new Error('Consulta muito longa para esta demonstração.');
+    if (sql.length > QUERY_LIMIT) throw new Error('Consulta muito longa para esta demonstração.');
     return sql;
   }
   async function run() {
@@ -284,9 +293,174 @@
       if (generation === executionGeneration) button.disabled = false;
     }
   }
+  function insertSqlText(editor, text, start = editor.selectionStart, end = editor.selectionEnd) {
+    editor.setRangeText(text, start, end, 'end');
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+    editor.focus();
+  }
+
+  function suggestionsAt(editor, table, columns) {
+    const caret = editor.selectionStart;
+    if (caret !== editor.selectionEnd || editor.value.length > QUERY_LIMIT) return null;
+    // Mantém as posições do texto, mas ignora literais, identificadores entre aspas e comentários.
+    const before = editor.value.slice(0, caret).replace(
+      /'(?:''|[^'])*(?:'|$)|"(?:""|[^"])*(?:"|$)|`(?:``|[^`])*(?:`|$)|\[[^\]]*(?:\]|$)|--[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/g,
+      (part) => ' '.repeat(part.length),
+    );
+    const prefix = before.match(/\w+$/)?.[0];
+    if (!prefix || !/^[a-z_]/i.test(prefix)) return null;
+    const start = caret - prefix.length;
+    const context = before.slice(0, start);
+    const tablePosition = /\b(?:FROM|JOIN)\s+$/i.test(context);
+    const byPosition = /\b(?:GROUP|ORDER)\s+$/i.test(context);
+    if (prefix.length < 2 && !tablePosition && !byPosition) return null;
+    const lowerPrefix = prefix.toLowerCase();
+    const end = caret + (editor.value.slice(caret).match(/^\w+/)?.[0].length ?? 0);
+    const current = editor.value.slice(start, end).toLowerCase();
+    let candidates = columns;
+    if (tablePosition) candidates = [table];
+    else if (byPosition) candidates = ['BY'];
+    else if (!/\.\s*$/.test(context)) candidates = [...columns, ...SQL_WORDS];
+    const values = candidates
+      .filter((candidate) => {
+        const lower = candidate.toLowerCase();
+        return lower.startsWith(lowerPrefix) && lower !== current;
+      })
+      .slice(0, COMPLETION_LIMIT)
+      .map((candidate) => prefix === lowerPrefix ? candidate.toLowerCase() : candidate);
+    return values.length ? { start, end, values } : null;
+  }
+
+  function initAutocomplete(editor, table, columns) {
+    const list = document.createElement('div');
+    list.id = `${editor.id}-suggestions`;
+    list.className = 'sql-suggestions';
+    list.hidden = true;
+    list.setAttribute('role', 'listbox');
+    list.setAttribute('aria-label', 'Sugestões SQL');
+    const announcement = document.createElement('span');
+    announcement.className = 'sql-suggestions-announcement';
+    announcement.setAttribute('aria-live', 'polite');
+    editor.after(list, announcement);
+    // https://www.w3.org/TR/wai-aria-1.2/#aria-autocomplete
+    editor.setAttribute('aria-autocomplete', 'list');
+    editor.setAttribute('aria-controls', list.id);
+    editor.setAttribute('aria-haspopup', 'listbox');
+
+    let completion = null;
+    let selected = -1;
+    function close() {
+      completion = null;
+      selected = -1;
+      list.hidden = true;
+      editor.removeAttribute('aria-activedescendant');
+      announcement.textContent = '';
+    }
+    function update(event) {
+      const next = event.isComposing ? null : suggestionsAt(editor, table, columns);
+      if (!next) {
+        close();
+        return;
+      }
+      editor.removeAttribute('aria-activedescendant');
+      selected = -1;
+      completion = next;
+      list.replaceChildren(...next.values.map((text, index) => {
+        const option = document.createElement('div');
+        option.id = `${list.id}-${index}`;
+        option.dataset.suggestion = String(index);
+        option.setAttribute('role', 'option');
+        option.setAttribute('aria-selected', 'false');
+        option.textContent = text;
+        return option;
+      }));
+      if (list.hidden) {
+        announcement.textContent = 'Sugestões de SQL. Use as setas e Enter para inserir.';
+        list.hidden = false;
+        list.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+    }
+    function accept(index) {
+      if (!completion) return;
+      const { start, end, values } = completion;
+      insertSqlText(editor, values[index], start, end);
+      close();
+    }
+
+    editor.addEventListener('input', update);
+    editor.addEventListener('blur', close);
+    editor.addEventListener('click', close);
+    list.addEventListener('mousedown', (event) => event.preventDefault());
+    list.addEventListener('click', (event) => {
+      const option = event.target.closest('[data-suggestion]');
+      if (option) accept(Number(option.dataset.suggestion));
+    });
+    editor.addEventListener('keydown', (event) => {
+      if (!completion || event.isComposing) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        close();
+        return;
+      }
+      const vertical = event.key === 'ArrowDown' || event.key === 'ArrowUp';
+      const navigates = ['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown', 'Tab'].includes(event.key);
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        if (vertical || navigates || event.key === 'Enter') close();
+        return;
+      }
+      if (vertical) {
+        event.preventDefault();
+        const last = completion.values.length - 1;
+        if (selected >= 0) list.children[selected].setAttribute('aria-selected', 'false');
+        selected = event.key === 'ArrowDown'
+          ? (selected === last ? 0 : selected + 1)
+          : (selected <= 0 ? last : selected - 1);
+        const active = list.children[selected];
+        active.setAttribute('aria-selected', 'true');
+        editor.setAttribute('aria-activedescendant', active.id);
+      } else if (event.key === 'Enter' && selected >= 0) {
+        event.preventDefault();
+        accept(selected);
+      } else if (navigates) {
+        close();
+      }
+    });
+  }
+
+  function initEditor(editor) {
+    const panel = document.querySelector(`[data-sql-schema="${editor.id}"]`);
+    const { name, columns } = window.CourseSqlEngine.schema;
+    const entries = Object.entries(columns);
+    initAutocomplete(editor, name, Object.keys(columns).sort());
+    panel.querySelector('summary').insertAdjacentHTML('beforeend', ` <code>${name}</code>`);
+    panel.insertAdjacentHTML('beforeend', `
+      <div class="sql-schema-body">
+        <div class="sql-schema-table">
+          <button class="sql-schema-name" type="button" data-sql-name="${name}">
+            <code>${name}</code><span>Tabela</span>
+          </button>
+        </div>
+        <ul class="sql-schema-columns" role="list" aria-label="Colunas de ${name}">
+          ${entries.map(([column, type]) => `
+            <li><button class="sql-schema-name" type="button" data-sql-name="${column}">
+              <code>${column}</code><span>${type}</span>
+            </button></li>
+          `).join('')}
+        </ul>
+      </div>
+    `);
+    panel.addEventListener('click', (event) => {
+      const item = event.target.closest('[data-sql-name]');
+      if (item) insertSqlText(editor, item.dataset.sqlName);
+    });
+  }
+
   function init() {
-    if (!el('sql-editor')) return;
-    el('sql-editor').value = examples.mensal;
+    const editor = el('sql-editor');
+    if (!editor) return;
+    initEditor(editor);
+    editor.value = examples.mensal;
     document.querySelectorAll('[data-query]').forEach((button) =>
       button.addEventListener('click', () => {
         document.querySelectorAll('[data-query]').forEach((b) => b.classList.remove('active'));
@@ -327,5 +501,88 @@
       })
       .catch(() => {});
   }
-  window.SqlLab = { init };
+  function initExercises() {
+    const rows = window.SALES_DATA;
+    const totals = new Map([['2026-05', 0], ['2026-06', 0]]);
+    for (const row of rows) {
+      if (totals.has(row.mes)) totals.set(row.mes, totals.get(row.mes) + Math.round(row.receita * 100));
+    }
+    const units = rows.reduce((total, row) => total + row.quantidade, 0);
+    const matches = {
+      contagem: (values) => values.length === 1 && values[0][0] === rows.length && values[0][1] === units,
+      meses: (values) => values.length === totals.size &&
+        new Set(values.map(([month]) => month)).size === totals.size &&
+        values.every(([month, amount]) =>
+          typeof amount === 'number' && Math.round(amount * 100) === totals.get(month),
+        ),
+    };
+
+    document.querySelectorAll('[data-sql-exercise]').forEach((form) => {
+      const editor = form.querySelector('textarea');
+      const button = form.querySelector('button[type="submit"]');
+      const status = form.querySelector('[role="status"]');
+      const results = form.querySelector('.exercise-results');
+      const { tHead, tBodies } = results.querySelector('table');
+      initEditor(editor);
+      let revision = 0;
+      editor.addEventListener('input', () => {
+        revision++;
+        results.hidden = true;
+        status.textContent = 'Consulta alterada. Execute para conferir.';
+      });
+      editor.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          if (!button.disabled) form.requestSubmit();
+        }
+      });
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (button.disabled) return;
+        const submitted = revision;
+        button.disabled = true;
+        results.hidden = true;
+        status.textContent = 'Executando consulta…';
+        try {
+          const query = validateSelect(editor.value);
+          await window.CourseSqlEngine.prepare(rows);
+          if (revision !== submitted) return;
+          const { columns, values } = await window.CourseSqlEngine.execute(query);
+          if (revision !== submitted) return;
+          tHead.replaceChildren();
+          tBodies[0].replaceChildren();
+          const header = tHead.insertRow();
+          for (const column of columns) {
+            const cell = document.createElement('th');
+            cell.scope = 'col';
+            cell.textContent = column;
+            header.append(cell);
+          }
+          for (const row of values.slice(0, LIMIT)) {
+            const line = tBodies[0].insertRow();
+            for (const value of row) {
+              line.insertCell().textContent = typeof value === 'number'
+                ? window.CourseViz.formatValue(value)
+                : (value ?? 'NULL');
+            }
+          }
+          results.hidden = !columns.length;
+          results.tabIndex = 0;
+          const correct = columns.length === 2 && matches[form.dataset.sqlExercise](values);
+          const feedback = correct
+            ? 'Resultado conferido.'
+            : 'Revise as linhas e colunas pedidas no enunciado.';
+          status.textContent = values.length > LIMIT
+            ? feedback + ` Mostrando as primeiras ${LIMIT} de ${values.length} linhas.`
+            : feedback + ` ${values.length} linha(s) retornada(s).`;
+        } catch (error) {
+          if (revision === submitted) status.textContent = `Erro: ${error.message}`;
+        } finally {
+          button.disabled = false;
+        }
+      });
+    });
+  }
+
+  window.SqlLab = { init, initExercises };
 })();

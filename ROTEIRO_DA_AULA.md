@@ -19,7 +19,7 @@ As mesmas falas estão na apresentação, em **Roteiro (N)**. As notas aparecem 
 | Defesa da conclusão e próxima investigação | 34–35 | 10 min |
 | **Total** | | **180 min** |
 
-O tempo é flexível dentro dos blocos. Para turma grande, selecione algumas duplas para fala e recolha as demais conclusões por escrito. Se o acesso à IA não estiver disponível, prossiga com a planilha e o laboratório local. Não existe API de IA integrada ao site. GUIA_DA_ATIVIDADE.md é o material do aluno; PROMPTS_DA_ATIVIDADE.txt contém o texto para copiar.
+O tempo é flexível dentro dos blocos. Para turma grande, selecione algumas duplas para fala e recolha as demais conclusões por escrito. Se o acesso à IA não estiver disponível, use a resposta simulada do guia do aluno e confira a conclusão com a planilha ou o laboratório local. Não existe API de IA integrada ao site. GUIA_DA_ATIVIDADE.md é o material do aluno; PROMPTS_DA_ATIVIDADE.txt contém o texto para copiar.
 
 ## Como conduzir
 
@@ -203,11 +203,11 @@ Ainda sem executar: descrevam a resposta que faria sentido. Se queremos o total 
 
 ## 29. UMA PERGUNTA. UM SELECT.
 
-Vamos testar uma pergunta de cada vez. Comece em Ver registros, passe pelo filtro, conte e some, e só depois agrupe por mês. Antes de clicar em Executar, peça que alguém traduza a consulta em português. O editor aceita Ctrl+Enter. Escolha a coluna de categoria, o indicador e a unidade do gráfico. Uma consulta só numérica, como COUNT(*), pode ser lida na tabela sem precisar de um gráfico. Se houver erro, leia a mensagem, confira os campos e tente novamente. Se a preparação do mecanismo falhar, use Tentar novamente. Todos os cálculos são do SQLite local, não de IA.
+Vamos testar uma pergunta de cada vez. Comece em Ver registros, passe pelo filtro, conte e some, e só depois agrupe por mês. Antes de clicar em Executar, peça que alguém traduza a consulta em português. Ao digitar parte de um comando ou nome de coluna, o editor mostra sugestões. Clique numa opção ou selecione-a com as setas e pressione Enter. Abra Tabelas e colunas para consultar o esquema completo. Ctrl+Enter executa a consulta. Escolha a coluna de categoria, o indicador e a unidade do gráfico. Uma consulta só numérica, como COUNT(*), pode ser lida na tabela sem precisar de um gráfico. Se houver erro, leia a mensagem, confira os campos e tente novamente. Se a preparação do mecanismo falhar, use Tentar novamente. Todos os cálculos são do SQLite local.
 
 ## 30. Mesmos dados. Duas impressões visuais.
 
-Peça que a turma compare as duas representações antes de interpretar. Ambas mostram maio R$ 7.686,24 e junho R$ 7.022,65, calculados da mesma coluna de receita do CSV. O gráfico B começa em R$6.800 e amplia a diferença visual. Não esconda essa origem: o exercício é ler o eixo e perceber que a mesma informação pode produzir impressões diferentes. Pergunte qual versão ajuda a comparar magnitudes e o que não podemos inferir sobre clientes ou causas. Passe à pergunta seguinte após a discussão.
+Peça que a turma compare as duas representações antes de interpretar. Ambas mostram maio R$ 7.686,24 e junho R$ 7.022,65, calculados da mesma coluna de receita do CSV. O gráfico B começa em R$6.800 e amplia a diferença visual. Não esconda essa origem: o exercício é ler o eixo e perceber que a mesma informação pode produzir impressões diferentes. Pergunte qual versão ajuda a comparar magnitudes e o que não podemos inferir sobre clientes ou causas. Reserve cinco minutos deste bloco para as duplas conferirem os totais no CSV ou na consulta Receita por mês. Peça a diferença em reais e a variação relativa a maio. Esperado: queda de R$ 663,59 (8,63%). Para investigar a hipótese de queda no número de clientes, peça identificadores anonimizados que permitam contar clientes distintos por mês. Retome a discussão no quiz seguinte.
 
 ## 31. O que os dois gráficos permitem concluir?
 

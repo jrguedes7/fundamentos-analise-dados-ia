@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
+const check = process.argv.includes('--check');
 const context = { window: {} };
 vm.createContext(context);
 for (const filename of ['js/data.js', 'js/activities.js', 'js/slides.js'])
@@ -37,7 +38,7 @@ As mesmas falas estão na apresentação, em **Roteiro (N)**. As notas aparecem 
 | Defesa da conclusão e próxima investigação | 34–35 | 10 min |
 | **Total** | | **180 min** |
 
-O tempo é flexível dentro dos blocos. Para turma grande, selecione algumas duplas para fala e recolha as demais conclusões por escrito. Se o acesso à IA não estiver disponível, prossiga com a planilha e o laboratório local. Não existe API de IA integrada ao site. GUIA_DA_ATIVIDADE.md é o material do aluno; PROMPTS_DA_ATIVIDADE.txt contém o texto para copiar.
+O tempo é flexível dentro dos blocos. Para turma grande, selecione algumas duplas para fala e recolha as demais conclusões por escrito. Se o acesso à IA não estiver disponível, use a resposta simulada do guia do aluno e confira a conclusão com a planilha ou o laboratório local. Não existe API de IA integrada ao site. GUIA_DA_ATIVIDADE.md é o material do aluno; PROMPTS_DA_ATIVIDADE.txt contém o texto para copiar.
 
 ## Como conduzir
 
@@ -95,13 +96,22 @@ doc += `## Referências técnicas
 
 Regenerar este documento: node scripts/export-roteiro.cjs.
 `;
-fs.writeFileSync(path.join(root, 'ROTEIRO_DA_AULA.md'), doc);
-fs.writeFileSync(
-  path.join(root, 'PROMPTS_DA_ATIVIDADE.txt'),
+const prompts =
   'PROMPT 1 — EXPLORAR A BASE E PLANEJAR A ANÁLISE\n\n' +
     w.CourseActivities.prompts.analise +
     '\n\nPROMPT 2 — EXPRESSAR A MESMA PERGUNTA EM SQL\n\n' +
     w.CourseActivities.prompts.sql +
-    '\n',
-);
-console.log(`Roteiro exportado: ${w.DECK_SLIDES.length} slides e ${w.LESSON_NOTES.length} falas.`);
+    '\n';
+const outputs = { 'ROTEIRO_DA_AULA.md': doc, 'PROMPTS_DA_ATIVIDADE.txt': prompts };
+for (const [name, contents] of Object.entries(outputs)) {
+  const filename = path.join(root, name);
+  if (!check) {
+    fs.writeFileSync(filename, contents);
+  } else if (!fs.existsSync(filename) || fs.readFileSync(filename, 'utf8').replace(/\r\n/g, '\n') !== contents) {
+    console.error(`Desatualizado: ${name}. Execute node scripts/export-roteiro.cjs.`);
+    process.exitCode = 1;
+  } else {
+    console.log(`OK ${name}`);
+  }
+}
+if (!check) console.log(`Roteiro exportado: ${w.DECK_SLIDES.length} slides e ${w.LESSON_NOTES.length} falas.`);

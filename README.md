@@ -10,7 +10,7 @@ Na pasta do projeto:
 python -m http.server 5500 --bind 127.0.0.1
 ```
 
-Abra http://localhost:5500. A apresentação usa Tailwind e Google Fonts pela internet. O SQLite é local, distribuído com WASM incorporado em `vendor/sql.js/`.
+Abra http://localhost:5500. Para abrir a apresentação com duplo clique, use o `index.html` na pasta completa do projeto. O SQLite funciona nos dois modos e é distribuído com WASM incorporado em `vendor/sql.js/`. Tailwind e Google Fonts usam a internet.
 
 Setas, PageUp/PageDown e Home/End navegam; F alterna tela cheia. **Roteiro (N)** abre as falas sugeridas na mesma tela. No editor SQL, as setas continuam editando e Ctrl+Enter executa.
 
@@ -46,7 +46,7 @@ O XLSX original contém fórmulas com maior precisão e soma **R$ 52.841,89** de
 
 Os cálculos somam os valores monetários já registrados por linha no CSV. Recalcular descontos com outra regra de arredondamento pode mudar centavos e não reproduz necessariamente essa fonte.
 
-SQLite executa as consultas no navegador. O gráfico SQL permite escolher categoria, indicador e unidade; tabela e gráfico mostram as mesmas primeiras 20 linhas, com aviso quando houver mais. A exploração resume toda a seleção e mostra uma amostra dos registros. Não há backend, autenticação ou API de IA integrada.
+SQLite executa as consultas no navegador e é carregado ao abrir o laboratório ou executar uma consulta em um exercício. Os slides de contagem e de comparação de escalas têm editor próprio, com dica, tabela e conferência do resultado. O gráfico SQL permite escolher categoria, indicador e unidade; tabela e gráfico mostram as mesmas primeiras 20 linhas, com aviso quando houver mais. A exploração resume toda a seleção e mostra uma amostra dos registros. Não há backend, autenticação ou API de IA integrada.
 
 O mecanismo SQL roda em um Worker, separado dos controles da apresentação. Consultas que ultrapassam oito segundos são interrompidas; a próxima execução prepara a base novamente. O carregamento tem limite de 15 segundos e permite nova tentativa após falha. Editar a consulta invalida o resultado anterior e cancela uma execução pendente.
 
@@ -62,9 +62,10 @@ Após alterar o CSV ou o código:
 python scripts/build.py
 node scripts/export-roteiro.cjs
 python scripts/build.py --check
+node scripts/export-roteiro.cjs --check
 ```
 
-Não edite `js/data.js` manualmente. O build gera essa cópia a partir do CSV e versiona os recursos locais pelo conteúdo. As amostras e a comparação de escalas são calculadas da mesma base ao montar os slides.
+O build gera `js/data.js` a partir do CSV, versiona os recursos locais e gera `vendor/sql.js/sql-wasm-source.js` para a abertura com duplo clique. Faça alterações nos arquivos de origem. As amostras e a comparação de escalas são calculadas da mesma base ao montar os slides.
 
 Para exportar uma cópia opcional em HTML único:
 
@@ -73,6 +74,18 @@ python scripts/build.py --single-file
 ```
 
 O arquivo `apresentacao_arquivo_unico.html` é gerado localmente e ignorado pelo Git. Ele incorpora código, estilos e SQLite; as fontes e o Tailwind continuam externos.
+
+## Teste de fumaça
+
+Com Node.js disponível, instale o Playwright apenas para testar:
+
+```powershell
+npm install --no-save --package-lock=false playwright
+npx playwright install chromium
+node tests/smoke.cjs
+```
+
+O teste inicia um servidor local e verifica os 35 slides, o roteiro, o teclado e consultas SQL de referência. Também abre o `index.html` diretamente como arquivo para testar o SQL no exercício e no laboratório. Para usar o Edge instalado, defina `$env:PLAYWRIGHT_CHANNEL = 'msedge'` antes de rodar o teste. Para a verificação presencial, use o [checklist de ensaio](docs/ensaio-aula.md).
 
 ## Verificação da versão
 
